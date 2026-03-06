@@ -1,3 +1,39 @@
 /*
-This module deals with
+This module deals with characters and sequences of characters.
 */
+
+object CharList
+
+  case class Char(ascii: Char(32))
+
+  abstract class CharList
+  case class CharNil() extends CharList
+  case class CharCons(h: Char, t: CharList) extends CharList
+
+  abstract class CharList2
+  case class CharNil2() extends CharList2
+  case class CharCons2(h: CharList, t: CharList2) extends CharList2
+
+  def length (lst: CharList): Int(32) :=
+    lst match {
+      case CharNil() => 0
+      case CharCons(h, t) => 1 + length(t)
+    }
+
+  def shiftChar (c: Char): Int(32) = c match {
+    case Char(n) => n
+  }
+
+  def shiftList (lst: CharList): Int(32) = lst match {
+    case CharNil() => 0
+    case CharCons(Char(n), t) => n + shiftList(t)
+  }
+
+  def shiftList2 (lsts: CharList2): Int(32) = lsts match {
+    case CharNil2() => 0
+    case CharCons2(h, t) => shiftList(h) + shiftList2(t)
+  }
+
+  
+
+end CharList

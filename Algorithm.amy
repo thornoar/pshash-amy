@@ -8,24 +8,24 @@ object IL
 
   abstract class IntList
   case class IntNil() extends IntList
-  case class IntCons(h: Int(64), t: IntList) extends IntList
+  case class IntCons(h: Int(32), t: IntList) extends IntList
 
-  def product (lst: IntList): Int(64) :=
+  def product (lst: IntList): Int(32) :=
     lst match {
       case IntNil() => 1
       case IntCons(h, t) => h * product(t)
     }
 
-  def rangeIncl (lo: Int(64), hi: Int(64)): IntList :=
+  def rangeIncl (lo: Int(32), hi: Int(32)): IntList :=
     if (hi < lo) then IntNil() else IntCons(lo, rangeIncl(lo+1, hi)) end if
 
-  def length (lst: IntList): Int(64) :=
+  def length (lst: IntList): Int(32) :=
     lst match {
       case IntNil() => 0
       case IntCons(h, t) => 1 + length(t)
     }
 
-  def take (n: Int(64), lst: IntList): IntList =
+  def take (n: Int(32), lst: IntList): IntList =
     if (n <= 0) then IntNil() else {
       lst match {
         case IntNil() => IntNil()
@@ -39,13 +39,13 @@ object CBN
 
   // Combinatorial functions
 
-  def factorial (n: Int(64)): Int(64) :=
+  def factorial (n: Int(32)): Int(32) :=
     if (n < 2) then 1 else n * factorial(n-1) end if
 
-  def factorialAlt (n: Int(64), m: Int(64)): Int(64) :=
+  def factorialAlt (n: Int(32), m: Int(32)): Int(32) :=
     product(rangeIncl(n - m + 1, n))
 
-  def cnk (n: Int(64), k: Int(64)): Int(64) =
+  def cnk (n: Int(32), k: Int(32)): Int(32) =
     factorialAlt(n, k) / factorial(k)
 
 end CBN
