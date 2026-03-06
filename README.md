@@ -1,0 +1,1 @@
+This is an implementation of [pshash](https://github.com/thornoar/pshash) in the [Amy](https://hkust-taco.github.io/mcc/labs/amy-spec) language. You can use it to test your interpreter, compiler, or type-checker for Amy. This codebase (not yet) compiles and type-checks under the reference Amy implementation.
