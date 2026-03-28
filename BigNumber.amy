@@ -1,4 +1,8 @@
-// Support for arbitrary precision non-negative integers
+/*
+Support for arbitrary precision non-negative integers
+
+Needs: Ordering.amy, Std.amy
+*/
 
 object BN
 
@@ -40,6 +44,23 @@ object BN
     }
   end sum
 
+  def difference (lhs: BigNumber, rhs: BigNumber) : BigNumber :=
+    rhs match {
+      case BigNil() => lhs
+      case BigCons(d2, t2) => lhs match {
+        case BigNil() => error("cannot subtract a larger number from a smaller number")
+        case BigCons(d1, t1) => ORD.compareInt(d1, d2) match {
+          case ORD.LT() => BigCons(10 + d1 - d2, difference(decrement(t1), t2))
+          case ORD.EQ() => difference(t1, t2) match {
+            case BigNil() => BigNil()
+            case t3 => BigCons(0, t3)
+          }
+          case ORD.GT() => BigCons(d1 - d2, difference(t1, t2))
+        }
+      }
+    }
+  end difference
+
   def productInt (lhs: BigNumber, rhs: Int(32)) : BigNumber :=
     if (rhs == 0)
     then BigNil()
@@ -54,6 +75,36 @@ object BN
     }
   end product
 
+  def compare (lhs: BigNumber, rhs: BigNumber): ORD.Ordering :=
+    lhs match {
+      case BigNil() => rhs match {
+        case BigNil() => ORD.EQ()
+        case _ => ORD.LT()
+      }
+      case BigCons(d1, t1) => rhs match {
+        case BigNil() => ORD.GT()
+        case BigCons(d2, t2) => compare(t1, t2) match {
+          case ORD.EQ() => ORD.compareInt(d1, d2)
+          case o => o
+        }
+      }
+    }
+  end compare
+
+  def mod (lhs: BigNumber, rhs: BigNumber) : BigNumber :=
+    compare(lhs, rhs) match {
+      case ORD.LT() => lhs
+      case _ => mod(difference(lhs, rhs), rhs)
+    }
+  end mod
+
+  def div (lhs: BigNumber, rhs: BigNumber) : BigNumber :=
+    compare(lhs, rhs) match {
+      case ORD.LT() => BigNil()
+      case _ => increment(div(difference(lhs, rhs), rhs))
+    }
+  end div
+
   def factorial (n: BigNumber) : BigNumber :=
     n match {
       case BigNil() => BigCons(1, BigNil())
@@ -61,7 +112,16 @@ object BN
     }
   end factorial
 
-  
+  def factorialAlt (n: BigNumber, m: BigNumber): BigNumber :=
+    m match {
+      case BigNil() => BigCons(1, BigNil())
+      case BigCons(d, t) => product(n, factorialAlt(decrement(n), decrement(m)))
+    }
+  end factorialAlt
+
+  def binomial (n: BigNumber, m: BigNumber): BigNumber :=
+    div(factorialAlt(n, m), factorial(m))
+  end binomial
 
   // Conversion and printing
 
@@ -90,6 +150,5 @@ object BN
 
   // Testing
 
-  printBig(factorial(toBig(21)));
-  Std.printInt(5)
+  printBig(div(toBig(100), toBig(2)))
 end BN
