@@ -1,0 +1,95 @@
+// Support for arbitrary precision non-negative integers
+
+object BN
+
+  abstract class BigNumber
+  case class BigNil() extends BigNumber
+  case class BigCons(d: Int(32), t: BigNumber) extends BigNumber
+
+  def increment (n: BigNumber) : BigNumber :=
+    n match {
+      case BigNil() => BigCons(1, BigNil())
+      case BigCons(9, t) => BigCons(0, increment(t))
+      case BigCons(d, t) => BigCons(d+1, t)
+    }
+  end increment
+
+  def decrement (n: BigNumber) : BigNumber :=
+    n match {
+      case BigNil() => error("cannot decrement zero")
+      case BigCons(1, BigNil()) => BigNil()
+      case BigCons(0, t) => BigCons(9, decrement(t))
+      case BigCons(d, t) => BigCons(d-1, t)
+    }
+  end decrement
+
+  // Mathematical operations
+
+  def sum (lhs: BigNumber, rhs: BigNumber) : BigNumber :=
+    lhs match {
+      case BigNil() => rhs
+      case BigCons(d1, t1) => rhs match {
+        case BigNil() => lhs
+        case BigCons(d2, t2) => 
+          val d: Int(32) = d1 + d2;
+          if (d < 10)
+          then BigCons(d, sum(t1, t2))
+          else BigCons(d % 10, increment(sum(t1, t2)))
+          end if
+      }
+    }
+  end sum
+
+  def productInt (lhs: BigNumber, rhs: Int(32)) : BigNumber :=
+    if (rhs == 0)
+    then BigNil()
+    else sum(lhs, productInt(lhs, rhs - 1))
+    end if
+  end productInt
+
+  def product (lhs: BigNumber, rhs: BigNumber) : BigNumber :=
+    rhs match {
+      case BigNil() => BigNil()
+      case BigCons(d, t) => sum(productInt(lhs, d), BigCons(0, product(lhs, t)))
+    }
+  end product
+
+  def factorial (n: BigNumber) : BigNumber :=
+    n match {
+      case BigNil() => BigCons(1, BigNil())
+      case _ => product(n, factorial(decrement(n)))
+    }
+  end factorial
+
+  
+
+  // Conversion and printing
+
+  def toBig (n: Int(32)) : BigNumber :=
+    if (n < 9)
+    then BigCons(n, BigNil())
+    else BigCons(n % 10, toBig(n / 10))
+    end if
+  end toBig
+
+  def fromBig (n: BigNumber) : Int(32) :=
+    n match {
+      case BigNil() => 0
+      case BigCons(d, t) => d + 10 * fromBig(t)
+    }
+  end fromBig
+
+  def show (n: BigNumber) : String :=
+    n match {
+      case BigNil() => "BN:"
+      case BigCons(d, t) => show(t) ++ Std.intToString(d)
+    }
+  end show
+
+  def printBig (n: BigNumber) : Unit := Std.printString(show(n)) end printBig
+
+  // Testing
+
+  printBig(factorial(toBig(21)));
+  Std.printInt(5)
+end BN
