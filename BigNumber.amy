@@ -6,11 +6,25 @@ Needs: Ordering.amy, Std.amy
 
 object BN
 
-  abstract class BigNumber
-  case class BigNil() extends BigNumber
-  case class BigCons(d: Int(32), t: BigNumber) extends BigNumber
+  abstract class BigInt
+  case class BigNil() extends BigInt
+  case class BigCons(d: Int(32), t: BigInt) extends BigInt
 
-  def increment (n: BigNumber) : BigNumber :=
+  def scaleByTen (n: BigInt) : BigInt :=
+    n match {
+      case BigNil() => BigNil()
+      case _ => BigCons(0, n)
+    }
+  end scaleByTen
+
+  def length (n: BigInt) : Int(32) :=
+    n match {
+      case BigNil() => 0
+      case BigCons(_, t) => 1 + length(t)
+    }
+  end length
+
+  def increment (n: BigInt) : BigInt :=
     n match {
       case BigNil() => BigCons(1, BigNil())
       case BigCons(9, t) => BigCons(0, increment(t))
@@ -18,7 +32,7 @@ object BN
     }
   end increment
 
-  def decrement (n: BigNumber) : BigNumber :=
+  def decrement (n: BigInt) : BigInt :=
     n match {
       case BigNil() => error("cannot decrement zero")
       case BigCons(1, BigNil()) => BigNil()
@@ -29,7 +43,17 @@ object BN
 
   // Mathematical operations
 
-  def sum (lhs: BigNumber, rhs: BigNumber) : BigNumber :=
+  // Add a small integer to a big integer
+  def sumInt (lhs: BigInt, rhs: Int(32)) : BigInt :=
+    lhs match {
+      case BigNil() => toBig(rhs)
+      case BigCons(d, t) =>
+        val temp: Int(32) = d + rhs;
+        BigCons(temp % 10, sumInt(t, temp / 10))
+    }
+  end sumInt
+
+  def sum (lhs: BigInt, rhs: BigInt) : BigInt :=
     lhs match {
       case BigNil() => rhs
       case BigCons(d1, t1) => rhs match {
@@ -44,7 +68,7 @@ object BN
     }
   end sum
 
-  def difference (lhs: BigNumber, rhs: BigNumber) : BigNumber :=
+  def difference (lhs: BigInt, rhs: BigInt) : BigInt :=
     rhs match {
       case BigNil() => lhs
       case BigCons(d2, t2) => lhs match {
@@ -61,21 +85,21 @@ object BN
     }
   end difference
 
-  def productInt (lhs: BigNumber, rhs: Int(32)) : BigNumber :=
+  def productInt (lhs: BigInt, rhs: Int(32)) : BigInt :=
     if (rhs == 0)
     then BigNil()
     else sum(lhs, productInt(lhs, rhs - 1))
     end if
   end productInt
 
-  def product (lhs: BigNumber, rhs: BigNumber) : BigNumber :=
+  def product (lhs: BigInt, rhs: BigInt) : BigInt :=
     rhs match {
       case BigNil() => BigNil()
       case BigCons(d, t) => sum(productInt(lhs, d), BigCons(0, product(lhs, t)))
     }
   end product
 
-  def compare (lhs: BigNumber, rhs: BigNumber): ORD.Ordering :=
+  def compare (lhs: BigInt, rhs: BigInt): ORD.Ordering :=
     lhs match {
       case BigNil() => rhs match {
         case BigNil() => ORD.EQ()
@@ -91,64 +115,93 @@ object BN
     }
   end compare
 
-  def mod (lhs: BigNumber, rhs: BigNumber) : BigNumber :=
+  def modInt (lhs: BigInt, rhs: Int(32)) : Int(32) :=
+    lhs match {
+      case BigNil() => 0
+      case BigCons(d, t) => (d % rhs + (10 % rhs) * modInt(t, rhs)) % rhs
+    }
+  end modInt
+
+  def modNaive (lhs: BigInt, rhs: BigInt) : BigInt :=
     compare(lhs, rhs) match {
       case ORD.LT() => lhs
-      case _ => mod(difference(lhs, rhs), rhs)
+      case ORD.EQ() => BigNil()
+      case ORD.GT() => modNaive(difference(lhs, rhs), rhs)
+    }
+  end modNaive
+
+  def mod (lhs: BigInt, rhs: BigInt) : BigInt :=
+    ORD.compareInt(length(lhs), length(rhs) + 1) match {
+      case ORD.GT() => lhs match {
+        case BigCons(d, t) => mod(BigCons(d, mod(t, rhs)), rhs)
+      }
+      case _ => modNaive(lhs, rhs)
     }
   end mod
 
-  def div (lhs: BigNumber, rhs: BigNumber) : BigNumber :=
+  def div (lhs: BigInt, rhs: BigInt) : BigInt :=
     compare(lhs, rhs) match {
       case ORD.LT() => BigNil()
       case _ => increment(div(difference(lhs, rhs), rhs))
     }
   end div
 
-  def factorial (n: BigNumber) : BigNumber :=
+  def factorialInt (n: Int(32)) : BigInt :=
+    if (n == 0)
+    then BigCons(1, BigNil())
+    else productInt(factorialInt(n-1), n)
+    end if
+  end factorialInt
+
+  def factorial (n: BigInt) : BigInt :=
     n match {
       case BigNil() => BigCons(1, BigNil())
       case _ => product(n, factorial(decrement(n)))
     }
   end factorial
 
-  def factorialAlt (n: BigNumber, m: BigNumber): BigNumber :=
+  def factorialAlt (n: BigInt, m: BigInt): BigInt :=
     m match {
       case BigNil() => BigCons(1, BigNil())
       case BigCons(d, t) => product(n, factorialAlt(decrement(n), decrement(m)))
     }
   end factorialAlt
 
-  def binomial (n: BigNumber, m: BigNumber): BigNumber :=
+  def binomial (n: BigInt, m: BigInt): BigInt :=
     div(factorialAlt(n, m), factorial(m))
   end binomial
 
   // Conversion and printing
 
-  def toBig (n: Int(32)) : BigNumber :=
-    if (n < 9)
-    then BigCons(n, BigNil())
-    else BigCons(n % 10, toBig(n / 10))
+  def toBig (n: Int(32)) : BigInt :=
+    if (n == 0) then BigNil() else
+      if (n < 10)
+      then BigCons(n, BigNil())
+      else BigCons(n % 10, toBig(n / 10))
+      end if
     end if
   end toBig
 
-  def fromBig (n: BigNumber) : Int(32) :=
+  def fromBig (n: BigInt) : Int(32) :=
     n match {
       case BigNil() => 0
       case BigCons(d, t) => d + 10 * fromBig(t)
     }
   end fromBig
 
-  def show (n: BigNumber) : String :=
+  def show (n: BigInt) : String :=
     n match {
       case BigNil() => "BN:"
       case BigCons(d, t) => show(t) ++ Std.intToString(d)
     }
   end show
 
-  def printBig (n: BigNumber) : Unit := Std.printString(show(n)) end printBig
+  def printBig (n: BigInt) : Unit := Std.printString(show(n)) end printBig
 
   // Testing
 
-  printBig(div(toBig(100), toBig(2)))
+  // printBig(factorialInt(5))
+  // Std.printInt(modInt(toBig(1111111111), 100))
+  // printBig(mod(toBig(100200000), toBig(17603)))
+  // printBig(toBig(8))
 end BN
