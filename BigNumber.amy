@@ -139,12 +139,12 @@ object BN
     }
   end mod
 
-  def div (lhs: BigInt, rhs: BigInt) : BigInt :=
-    compare(lhs, rhs) match {
-      case ORD.LT() => BigNil()
-      case _ => increment(div(difference(lhs, rhs), rhs))
-    }
-  end div
+  // def div (lhs: BigInt, rhs: BigInt) : BigInt :=
+  //   compare(lhs, rhs) match {
+  //     case ORD.LT() => BigNil()
+  //     case _ => increment(div(difference(lhs, rhs), rhs))
+  //   }
+  // end div
 
   def factorialInt (n: Int(32)) : BigInt :=
     if (n == 0)
@@ -167,9 +167,24 @@ object BN
     }
   end factorialAlt
 
-  def binomial (n: BigInt, m: BigInt): BigInt :=
-    div(factorialAlt(n, m), factorial(m))
-  end binomial
+  def binomialNaive (n: BigInt, m: BigInt): BigInt :=
+    m match {
+      case BigNil() => BigCons(1, BigNil())
+      case _ => n match {
+        case BigNil() => BigNil()
+        case _ =>
+          val nprev: BigInt = decrement(n);
+          sum(binomialNaive(nprev, m), binomialNaive(nprev, decrement(m)))
+      }
+    }
+  end binomialNaive
+
+  def powInt (n: BigInt, exp: Int(32)): BigInt :=
+    if (exp <= 0)
+    then BigCons(1, BigNil())
+    else product(n, powInt(n, exp-1))
+    end if
+  end powInt
 
   // Conversion and printing
 
@@ -202,6 +217,7 @@ object BN
 
   // printBig(factorialInt(5))
   // Std.printInt(modInt(toBig(1111111111), 100))
-  // printBig(mod(toBig(100200000), toBig(17603)))
-  // printBig(toBig(8))
+  // printBig(mod(toBig(100293000), toBig(17603)))
+  // printBig(powInt(toBig(1291), 20))
+  printBig(binomialNaive(toBig(12), toBig(6)))
 end BN
